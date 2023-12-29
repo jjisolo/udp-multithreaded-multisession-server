@@ -15,9 +15,6 @@ namespace Ozzy::Proto
         // should be declared as unstable and dropped down.
         PacketRetransmitMaxAttempts   = 4,
 
-        // How much we wait until the server responds with ... something
-        PacketWaitTimeoutMillis       = 400,
-
         // Maximal transmittion unit size(bits)
         TransmittionUnitSize          = 1500 * 8,
     };
@@ -75,8 +72,10 @@ namespace Ozzy::Proto
 #pragma pack(push, 1)
     struct Handshake
     {
+        // Value to check client's endiannes
+        const std::uint8_t endian = 1;
         // 8 readonly bits for the type of this message
-        const std::uint8_t type = MESSAGE_TYPE_HANDSHAKE;
+        const std::uint8_t type   = MESSAGE_TYPE_HANDSHAKE;
     };
     static_assert(sizeof(Handshake) <= OZZY_MAXIMAL_TRANSMITTION_UNIT_SIZE);
 #pragma pack(pop)

@@ -95,15 +95,15 @@ namespace Ozzy::Base
         //
         // I've decided to make the protocol backwards-compatible, so we
         // can use polyphormism here.
-        virtual void handle_handshake(udp::endpoint client_endpoint, udp::socket &&client_socket) noexcept = 0;
+        virtual void handle_handshake(udp::endpoint client_endpoint, udp::socket &&client_socket, bool client_is_big_endian) noexcept = 0;
 
         // Send individual frame to the client
         virtual bool send_frame(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                                Proto::Frame frame) const noexcept = 0;
+                                Proto::Frame frame, bool client_is_big_endian) const noexcept = 0;
 
         // Send array of frames with random doubles from -x to x
         virtual bool send_frame_array(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                                      double x) const noexcept = 0;
+                                      double x, bool client_is_big_endian) const noexcept = 0;
 
     private:
         std::atomic<bool> m_should_quit;

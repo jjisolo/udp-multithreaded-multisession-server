@@ -23,6 +23,10 @@ set(LIB_FS_SOURCES
     base/LibFS/thread_cache_file.cxx
 )
 
+set(LIB_UDP_SOURCES
+    base/LibUDP/networking.cxx
+)
+
 set(LIB_LOG_SOURCES
     base/LibLog/logging.cxx
 )
@@ -39,20 +43,29 @@ set(CLIENT_SOURCES
     client/udp_client_v2.cxx
 )
 
-# Include Boost headers
+# Include headers
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/base/)
-#include_directories(${CMAKE_SOURCE_DIR}/base/LibLog)
-#include_directories(${CMAKE_SOURCE_DIR}/base/LibUDP)
-#include_directories(${CMAKE_SOURCE_DIR}/base/LibTT)
 
 # Add server and client executables
 add_library   (ozzy_base       ${BASE_SOURCES}   )
 add_library   (ozzy_filesystem ${LIB_FS_SOURCES} )
 add_library   (ozzy_logging    ${LIB_LOG_SOURCES})
+add_library   (ozzy_udp        ${LIB_UDP_SOURCES})
 add_executable(ozzy_server     ${SERVER_SOURCES} )
 add_executable(ozzy_client     ${CLIENT_SOURCES} )
 
+# Macros
+include (TestBigEndian)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+     message(STATUS "Host architecture is BIG ENDIAN")
+     add_definitions(-DTARGET_DEVICE_LITTLE_ENDIAN=0)
+else()
+     message(STATUS "Host architecture is LITTLE ENDIAN")
+     add_definitions(-DTARGET_DEVICE_LITTLE_ENDIAN=1)
+endif()
+
 # Link libraries
-target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging)
-target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging)
+target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
+target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)

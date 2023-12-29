@@ -6,9 +6,4 @@ namespace Ozzy::Base
     {
         m_socket.close();
     }
-
-    void UdpClientBase::write_frame(Proto::Frame &frame)
-    {
-
-    }
 }

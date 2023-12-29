@@ -17,7 +17,7 @@ namespace Ozzy::v2
             if (!LibUDP::send_data(m_endpoint, m_socket, handshake))
             {
                 LibLog::log_print(m_logger_name, "Unable to send data to the server");
-                std::this_thread::sleep_for(std::chrono::milliseconds(Proto::Constant::PacketWaitTimeoutMillis));
+                std::this_thread::sleep_for(std::chrono::milliseconds(Proto::Constant::PacketRetransmitWaitTimestamp));
                 continue;
             }
 
@@ -155,6 +155,9 @@ namespace Ozzy::v2
                 LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::NACK);
                 continue;
             }
+
+            for(unsigned ii = 0; ii < frame.length; ++ii)
+                LibLog::log_print(m_logger_name, "Received payload: " + std::to_string(frame.payload[ii]));
 
             // Write to temporary cache file
             cache_file.write_frame(frame);

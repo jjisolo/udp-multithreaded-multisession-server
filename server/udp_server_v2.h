@@ -25,13 +25,13 @@ namespace Ozzy::v2
         void handle_message(udp::endpoint client_endpoint, std::size_t bytes_received) noexcept override;
 
         // Handle the handshake between the server and the client
-        void handle_handshake(udp::endpoint client_endpoint, udp::socket&& client_socket) noexcept override;
+        void handle_handshake(udp::endpoint client_endpoint, udp::socket&& client_socket, bool client_is_big_endian) noexcept override;
 
         // Send individual frame to the client
-        bool send_frame(udp::endpoint& client_endpoint, udp::socket& client_socket, Proto::Frame frame) const noexcept override;
+        bool send_frame(udp::endpoint& client_endpoint, udp::socket& client_socket, Proto::Frame frame, bool client_is_big_endian) const noexcept override;
 
         // Send array of frames with random doubles from -x to x
-        bool send_frame_array(udp::endpoint& client_endpoint, udp::socket& client_socket, double x) const noexcept override;
+        bool send_frame_array(udp::endpoint& client_endpoint, udp::socket& client_socket, double x, bool client_is_big_endian) const noexcept override;
     };
 }
 

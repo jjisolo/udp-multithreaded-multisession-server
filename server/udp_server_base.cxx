@@ -1,5 +1,6 @@
 #include "udp_server_base.h"
 #include "LibLog/logging.h"
+#include "LibUDP/networking.h"
 
 namespace Ozzy::Base
 {

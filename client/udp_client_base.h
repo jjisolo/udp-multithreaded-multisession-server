@@ -50,9 +50,6 @@ namespace Ozzy::Base
 
         virtual ~UdpClientBase();
 
-    protected:
-        virtual void write_frame(Proto::Frame &frame);
-
     public:
         virtual void process_handshake() = 0;
 

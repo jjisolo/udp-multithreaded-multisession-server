@@ -3,7 +3,7 @@
 namespace Ozzy::LibUDP
 {
     template<typename T>
-    bool receive_data(udp::endpoint& endpoint, udp::socket& socket, T& result)
+    bool receive_data(udp::endpoint& endpoint, udp::socket& socket, T& result, bool endian_swap)
     {
         std::size_t bytes_received = 0u;
 
@@ -12,13 +12,23 @@ namespace Ozzy::LibUDP
                 endpoint
         );
 
+        if(endian_swap)
+        {
+            swap_endianess(result);
+        }
+
         return bytes_received == sizeof(T);
     }
 
     template<typename T>
-    bool send_data(udp::endpoint& endpoint, udp::socket& socket, T&& data)
+    bool send_data(udp::endpoint& endpoint, udp::socket& socket, T&& data, bool endian_swap)
     {
         std::size_t bytes_sended = 0u;
+
+        if(endian_swap)
+        {
+            swap_endianess(data);
+        }
 
         bytes_sended = socket.send_to(
             boost::asio::buffer(std::addressof(data), sizeof(T)),
@@ -26,5 +36,11 @@ namespace Ozzy::LibUDP
         );
 
         return bytes_sended == sizeof(T);
+    }
+
+    template<typename T>
+    void swap_endianess(T &data)
+    {
+        data = boost::endian::endian_reverse(data);
     }
 }
