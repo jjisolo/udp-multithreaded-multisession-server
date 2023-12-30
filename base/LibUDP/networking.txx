@@ -1,5 +1,4 @@
 #include "networking.h"
-#include <boost/system.hpp>
 
 namespace Ozzy::LibUDP
 {

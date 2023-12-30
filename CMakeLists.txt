@@ -83,5 +83,10 @@ endif()
 
 
 # Link libraries
-target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
-target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp pthread)
+    target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp pthread)
+else()
+    target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
+    target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
+endif()

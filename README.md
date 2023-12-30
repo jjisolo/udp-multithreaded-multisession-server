@@ -15,7 +15,7 @@ $ sudo apt-get install libboost-all-dev
 
 Next, `cd` into the `build` directory, and specify pre-defines compilers macros, as follows:
 ```
-$ cmake -DCLIENTS_THREAD_POOL_CAPACITY=1000 -DOZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES=5000000 -DOZZY_USE_LARGE_CHUNK_MEMORY_ARENAS  ..
+$ cmake -DCLIENTS_THREAD_POOL_CAPACITY=1000 -DOZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES=5000000 -DOZZY_USE_LARGE_CHUNK_MEMORY_ARENAS=1 ..
 ```
 Or! just type this to use default values
 ```
@@ -52,6 +52,8 @@ After the program is finished, you might want to look at the resulting file, so 
 $ python3 hextodouble.py 
 ```
 It will read the `result.bin` file and show you it's contents in formatted way
+
+*WARNING: This script works only on little endian machines!*
 
 ### Protocol Overview
 General rules of the protocol:

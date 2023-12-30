@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 
         for (int i = 0; i < num_clients; ++i)
         {
-            client_threads.emplace_back([&]()
+            client_threads.emplace_back([&io_context, x, i]
             {
                 try
                 {

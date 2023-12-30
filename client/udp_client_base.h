@@ -18,7 +18,7 @@ namespace Ozzy::Base
     {
     public:
         UdpClientBase(boost::asio::io_context &io_context, const std::string &config_path,
-                      const std::string &logger_name, const double x)
+                      const std::string logger_name, const double x)
             : Informative(logger_name), m_io_context(io_context), m_upper_bound(x)
         {
             if (!config_load(config_path))
