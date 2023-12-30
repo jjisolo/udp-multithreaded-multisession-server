@@ -55,8 +55,11 @@ namespace Ozzy::Base
                 {
                     if (m_client_threads[i].joinable())
                     {
-                        m_client_threads[i].join();
+                        m_client_threads    [i].join();
                         m_client_connections[i]->close();
+
+                        m_client_threads    .erase(m_client_threads.begin()     + i);
+                        m_client_connections.erase(m_client_connections.begin() + 1);
                         ++joined_total;
                     }
                 }
