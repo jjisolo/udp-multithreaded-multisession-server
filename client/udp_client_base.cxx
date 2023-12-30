@@ -4,6 +4,6 @@ namespace Ozzy::Base
 {
     UdpClientBase::~UdpClientBase()
     {
-        m_socket.close();
+        m_session->close();
     }
 }

@@ -6,6 +6,7 @@
 #include <boost/asio.hpp>
 #include "protocol.h"
 #include "LibLog/logging.h"
+#include "LibUDP/networking.h"
 #include "LibTT/configurable.h"
 #include "LibTT/informative.h"
 
@@ -18,7 +19,7 @@ namespace Ozzy::Base
     public:
         UdpClientBase(boost::asio::io_context &io_context, const std::string &config_path,
                       const std::string &logger_name, const double x)
-            : Informative(logger_name), m_socket(io_context), m_io_context(io_context), m_upper_bound(x)
+            : Informative(logger_name), m_io_context(io_context), m_upper_bound(x)
         {
             if (!config_load(config_path))
             {
@@ -32,14 +33,23 @@ namespace Ozzy::Base
                 return;
             }
 
-            auto resolver = udp::resolver(io_context);
-            auto endpoints = resolver.resolve(udp::v4(), m_config["server_ip_address"], m_config["server_port"]);
-            m_endpoint = *endpoints.begin();
-
             try
             {
-                m_socket.open(udp::v4());
-                m_socket.bind(udp::endpoint(udp::v4(), 0));
+                auto resolver  = udp::resolver(io_context);
+                auto endpoints = resolver.resolve(udp::v4(), m_config["server_ip_address"], m_config["server_port"]);
+
+                m_session = std::make_shared<LibUDP::Session>(io_context);
+                // Perform none endian conversions, because server has already handled
+                // it for us
+#if TARGET_DEVICE_LITTLE_ENDIAN
+                m_session->to_big_endian = false;
+#else
+                m_session->to_big_endian = true;
+#endif
+                m_session->endpoint = *endpoints.begin();
+                m_session->socket   = udp::socket(io_context);
+                m_session->socket.open(udp::v4());
+                m_session->socket.bind(udp::endpoint(udp::v4(), 0));
             }
             catch (const boost::system::system_error &)
             {
@@ -56,12 +66,9 @@ namespace Ozzy::Base
         virtual bool send_handshake() = 0;
 
     protected:
-        udp::socket m_socket;
-        udp::endpoint m_endpoint;
-        std::mutex m_send_mutex;
-        std::mutex m_recv_mutex;
-        double m_upper_bound;
-        boost::asio::io_context &m_io_context;
+        std::shared_ptr<LibUDP::Session> m_session;
+        boost::asio::io_context         &m_io_context;
+        double                           m_upper_bound;
     };
 }
 

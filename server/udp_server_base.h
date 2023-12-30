@@ -8,6 +8,7 @@
 
 #include "protocol.h"
 #include "LibLog/logging.h"
+#include "LibUDP/networking.h"
 #include "LibTT/configurable.h"
 #include "LibTT/informative.h"
 
@@ -92,18 +93,13 @@ namespace Ozzy::Base
         virtual void handle_message(udp::endpoint client_endpoint, std::size_t bytes_received) noexcept = 0;
 
         // Handle the handshake between the server and the client
-        //
-        // I've decided to make the protocol backwards-compatible, so we
-        // can use polyphormism here.
-        virtual void handle_handshake(udp::endpoint client_endpoint, udp::socket &&client_socket, bool client_is_big_endian) noexcept = 0;
+        virtual void handle_handshake(std::shared_ptr<LibUDP::Session>&& session) noexcept = 0;
 
         // Send individual frame to the client
-        virtual bool send_frame(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                                Proto::Frame frame, bool client_is_big_endian) const noexcept = 0;
+        virtual bool send_frame(std::shared_ptr<LibUDP::Session>& session, Proto::Frame frame) noexcept = 0;
 
         // Send array of frames with random doubles from -x to x
-        virtual bool send_frame_array(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                                      double x, bool client_is_big_endian) const noexcept = 0;
+        virtual bool send_frame_array(std::shared_ptr<LibUDP::Session>& session, double x) noexcept = 0;
 
     private:
         std::atomic<bool> m_should_quit;
@@ -112,12 +108,14 @@ namespace Ozzy::Base
         std::thread m_thread_cleaner;
 
     protected:
-        mutable std::uint64_t m_doubles_count;
+        mutable std::uint64_t               m_doubles_count;
         static thread_local std::mt19937_64 m_random_engine;
 
-        std::atomic<bool> m_process_next_request;
-        std::vector<std::thread> m_client_threads;
-        boost::asio::io_context &m_io_context;
+        std::vector<std::shared_ptr<LibUDP::Session>> m_client_connections;
+        std::vector<std::thread    >                  m_client_threads;
+
+        std::atomic<bool>            m_process_next_request;
+        boost::asio::io_context     &m_io_context;
         std::array<std::uint8_t, Proto::Constant::TransmittionUnitSize> m_receive_buffer{};
     };
 }

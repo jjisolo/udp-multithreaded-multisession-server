@@ -4,21 +4,20 @@
 
 namespace Ozzy::v2
 {
-    bool UdpServer::send_frame(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                               Proto::Frame frame, bool client_is_big_endian) const noexcept
+    bool UdpServer::send_frame(std::shared_ptr<LibUDP::Session>& session, Proto::Frame frame) noexcept
     {
         client_answer_t answer;
 
         for (std::size_t i = 0u; i < Proto::Constant::PacketRetransmitMaxAttempts; ++i)
         {
-            if (!LibUDP::send_data(client_endpoint, client_socket, frame, client_is_big_endian))
+            if (!LibUDP::send_data(session, frame))
             {
                 LibLog::log_print(m_logger_name,
                                   "Failed sending frame(sending failed) to the client, connection unstable");
                 return false;
             }
 
-            if (!LibUDP::receive_data(client_endpoint, client_socket, answer, client_is_big_endian))
+            if (!LibUDP::receive_data(session, answer))
             {
                 LibLog::log_print(m_logger_name,
                                   "Failed sending frame(receiving answer failed) to the client, connection unstable");
@@ -35,7 +34,7 @@ namespace Ozzy::v2
             {
                 LibLog::log_print(m_logger_name,
                                   "Client requested to drop the connection " + LibLog::serialize_endpoint(
-                                      client_endpoint));
+                                      session->endpoint));
                 return false;
             }
 
@@ -46,8 +45,7 @@ namespace Ozzy::v2
         return false;
     }
 
-    bool UdpServer::send_frame_array(udp::endpoint &client_endpoint, udp::socket &client_socket,
-                                     double x, bool client_is_big_endian) const noexcept
+    bool UdpServer::send_frame_array(std::shared_ptr<LibUDP::Session>& session, double x) noexcept
     {
         const int unsigned frames_total = (m_doubles_count + Proto::OZZY_PAYLOAD_COUNT_PER_CHUNK - 1) /
                                           Proto::OZZY_PAYLOAD_COUNT_PER_CHUNK;
@@ -61,7 +59,6 @@ namespace Ozzy::v2
         m_random_engine = std::mt19937_64(seed());
 
         std::uniform_real_distribution<double> real_distribution(-x, x);
-
         for (std::size_t k = 0; k < frames_total; ++k)
         {
             // Bake the frame
@@ -80,7 +77,7 @@ namespace Ozzy::v2
             //
             // If the client repsponded with Nack more than PacketRetransmitMaxAttempt, than
             // connection is marked as unstable and should be closed.
-            if (!send_frame(client_endpoint, client_socket, frame, client_is_big_endian))
+            if (!send_frame(session, frame))
             {
                 LibLog::log_print(m_logger_name, "Unable to send the frame to the client");
                 return false;
@@ -89,9 +86,9 @@ namespace Ozzy::v2
             doubles_remain -= frame.length;
 
             if (k + 1 == frames_total)
-                LibUDP::send_data(client_endpoint, client_socket, Proto::v1::Answer::BRK, client_is_big_endian);
+                LibUDP::send_data(session, Proto::v1::Answer::BRK);
             else
-                LibUDP::send_data(client_endpoint, client_socket, Proto::v1::Answer::CONT, client_is_big_endian);
+                LibUDP::send_data(session, Proto::v1::Answer::CONT);
         }
 
         return true;
@@ -102,21 +99,19 @@ namespace Ozzy::v2
         m_process_next_request.store(false);
 
         // Create the socket, that will handle the response routine for this message
-        boost::asio::io_context io_context;
-        udp::socket client_socket(io_context);
-        client_socket.open(udp::v4());
-        client_socket.bind(udp::endpoint(udp::v4(), 0));
+        boost::asio::io_context          io_context;
+        std::shared_ptr<LibUDP::Session> session = std::make_shared<LibUDP::Session>(io_context, client_endpoint);
 
         // Validate that we received enough data
         if (bytes_received != sizeof(Proto::Handshake))
         {
             LibLog::log_print(m_logger_name, "Recieve failed, requested re-transmit");
-            LibUDP::send_data(client_endpoint, client_socket, Proto::v1::NACK);
+            LibUDP::send_data(session, Proto::v1::NACK);
         }
 
         // Find out client endianes
-        const bool         client_using_big_endian = m_receive_buffer[0] != 1;
-        const std::uint8_t message                 = m_receive_buffer[1];
+        session->to_big_endian = m_receive_buffer[0] != 1;
+        const std::uint8_t message = m_receive_buffer[1];
 
         if (message == Proto::MESSAGE_TYPE_HANDSHAKE)
         {
@@ -124,21 +119,20 @@ namespace Ozzy::v2
             {
                 LibLog::log_print(m_logger_name,
                                   "Error recieve data does not match expected struct(Ozzy::Proto::Handshake)");
-                LibUDP::send_data(client_endpoint, client_socket, Proto::v1::NACK, client_using_big_endian);
+                LibUDP::send_data(session, Proto::v1::NACK);
             }
 
             // Create the separate thread for the client
-            if (m_client_threads.size() < CLIENTS_THREAD_POOL_CAPACITY)
+            if (m_client_connections.size() < CLIENTS_THREAD_POOL_CAPACITY)
             {
-                m_client_threads.emplace_back(&UdpServer::handle_handshake, this, client_endpoint,
-                                              std::move(client_socket), client_using_big_endian);
+                m_client_connections.push_back(session);
+                m_client_threads.emplace_back (&UdpServer::handle_handshake, this, std::move(session));
             }
             else
             {
                 LibLog::log_print(m_logger_name, "Too many threads for the client requests, handshake dropped");
-                LibUDP::send_data(client_endpoint, client_socket, Proto::v2::CLIENT_THREAD_POOL_EXHAUSED,
-                                  client_using_big_endian);
-                client_socket.close();
+                LibUDP::send_data(session, Proto::v2::CLIENT_THREAD_POOL_EXHAUSED);
+                session->close();
             }
         }
         else
@@ -146,70 +140,60 @@ namespace Ozzy::v2
             LibLog::log_print(m_logger_name,
                               "Client " + LibLog::serialize_endpoint(client_endpoint) +
                               " did not start the transmit operation with the hadnshake. Connection discarded.");
-            LibUDP::send_data(client_endpoint, client_socket, Proto::v1::DROP, client_using_big_endian);
-            client_socket.close();
+            LibUDP::send_data(session, Proto::v1::DROP);
+            session->close();
         }
     }
 
-    void UdpServer::handle_handshake(udp::endpoint client_endpoint, udp::socket &&client_socket,
-                                     bool client_is_big_endian) noexcept
+
+    void UdpServer::handle_handshake(std::shared_ptr<LibUDP::Session> &&session) noexcept
     {
+        m_process_next_request.store(true);
+
         // 1. Recieve handshake from the client, answer with Ack, meaning that handhsake data
         // transmitted with no errors
-        LibLog::log_print(m_logger_name, "Recieved handshake from " + LibLog::serialize_endpoint(client_endpoint));
-        LibUDP::send_data(client_endpoint, client_socket, Proto::v1::ACK, client_is_big_endian);
+        LibLog::log_print(m_logger_name, "Recieved handshake from " + LibLog::serialize_endpoint(session->endpoint));
+        LibUDP::send_data(session, Proto::v1::ACK);
 
         // Validate client's version
         std::uint8_t client_version;
 
-        if (!LibUDP::receive_data(client_endpoint, client_socket, client_version, client_is_big_endian))
+        if (!LibUDP::receive_data(session, client_version))
         {
             if (client_version < Proto::VERSION_2)
             {
-                LibUDP::send_data(client_endpoint, client_socket, Proto::v1::ERR_VERSIONS_INCOMPATIBLE,
-                                  client_is_big_endian);
-                LibUDP::send_data(client_endpoint, client_socket, Proto::VERSION_2, client_is_big_endian);
-                client_socket.close();
+                LibUDP::send_data(session, Proto::v1::ERR_VERSIONS_INCOMPATIBLE);
+                LibUDP::send_data(session, Proto::VERSION_2);
                 return;
             }
         }
-        LibUDP::send_data(client_endpoint, client_socket, Proto::v1::ACK, client_is_big_endian);
-
-#if 0
-        // Handshake is unused here, maybe add some values later
-        Proto::Handshake handshake;
-        std::memcpy(&handshake, m_receive_buffer.data(), sizeof(Proto::Handshake));
-#endif
-        m_process_next_request.store(true);
+        LibUDP::send_data(session, Proto::v1::ACK);
 
         // 2. Get the X upper_bound from the client
         double x_upper_bound;
 
-        if (!LibUDP::receive_data(client_endpoint, client_socket, x_upper_bound, client_is_big_endian))
+        if (!LibUDP::receive_data(session, x_upper_bound))
         {
             LibLog::log_print(m_logger_name, "Unable to receive the answer from the client, handshake failed");
-            client_socket.close();
             return;
         }
 
         // Receive answer from the client, if it's Drop, then close the session.
         std::uint8_t client_answer;
 
-        if (!LibUDP::receive_data(client_endpoint, client_socket, client_answer, client_is_big_endian))
+        if (!LibUDP::receive_data(session, client_answer))
         {
             LibLog::log_print(m_logger_name, "Unable to receive the answer from the client, handshake failed");
-            client_socket.close();
             return;
         }
 
         if (client_answer == Proto::v1::Answer::DROP)
         {
             LibLog::log_print(m_logger_name, "Client requested to close the session");
-            client_socket.close();
             return;
         }
 
-        LibLog::log_print(m_logger_name, "Succesfully handshaked with " + LibLog::serialize_endpoint(client_endpoint));
+        LibLog::log_print(m_logger_name, "Succesfully handshaked with " + LibLog::serialize_endpoint(session->endpoint));
 
         // 3. Start sending the packets to the client. According to the MTU of ~1500.
         // Meaninng that each packet should be less than 1500 bytes.
@@ -217,22 +201,18 @@ namespace Ozzy::v2
         // Validation of the packet is performed using checksum calculation
         // of the payload.
         // We !do not! track the missing packets, it's the RTMP/TCP style.
-        LibLog::log_print(m_logger_name, "Start sending frames to " + LibLog::serialize_endpoint(client_endpoint));
+        LibLog::log_print(m_logger_name, "Start sending frames to " + LibLog::serialize_endpoint(session->endpoint));
 
-        if (!send_frame_array(client_endpoint, client_socket, x_upper_bound, client_is_big_endian))
+        if (!send_frame_array(session, x_upper_bound))
         {
             LibLog::log_print(m_logger_name,
-                              "Discarded connection with " + LibLog::serialize_endpoint(client_endpoint));
-            LibUDP::send_data(client_endpoint, client_socket, Proto::v1::Answer::DROP, client_is_big_endian);
-            client_socket.close();
+                              "Discarded connection with " + LibLog::serialize_endpoint(session->endpoint));
+            LibUDP::send_data(session, Proto::v1::Answer::DROP);
             return;
         }
 
         LibLog::log_print(m_logger_name,
-                          "Sucessfully sended frames to the client " + LibLog::serialize_endpoint(client_endpoint));
-
-        client_socket.close();
-        LibLog::log_print(m_logger_name,
-                          "Closed the connection with " + LibLog::serialize_endpoint(client_endpoint));
+                          "Sucessfully sended frames to the client " + LibLog::serialize_endpoint(session->endpoint));
+        LibLog::log_print(m_logger_name, "Closed the connection with " + LibLog::serialize_endpoint(session->endpoint));
     }
 }

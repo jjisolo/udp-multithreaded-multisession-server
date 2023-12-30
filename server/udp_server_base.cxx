@@ -51,11 +51,12 @@ namespace Ozzy::Base
             while (true)
             {
                 std::size_t joined_total = 0;
-                for (auto &thread: m_client_threads)
+                for (std::size_t i = 0; i < m_client_threads.size(); ++ i)
                 {
-                    if (thread.joinable())
+                    if (m_client_threads[i].joinable())
                     {
-                        thread.join();
+                        m_client_threads[i].join();
+                        m_client_connections[i]->close();
                         ++joined_total;
                     }
                 }

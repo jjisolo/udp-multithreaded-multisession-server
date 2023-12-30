@@ -72,7 +72,7 @@ namespace Ozzy::Proto
 #pragma pack(push, 1)
     struct Handshake
     {
-        // Value to check client's endiannes
+        // Value to check server's endiannes
         const std::uint8_t endian = 1;
         // 8 readonly bits for the type of this message
         const std::uint8_t type   = MESSAGE_TYPE_HANDSHAKE;

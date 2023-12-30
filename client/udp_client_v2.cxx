@@ -14,14 +14,14 @@ namespace Ozzy::v2
 
         for (std::size_t attempts = 0; attempts < Proto::PacketRetransmitMaxAttempts; ++attempts)
         {
-            if (!LibUDP::send_data(m_endpoint, m_socket, handshake))
+            if (!LibUDP::send_data(m_session, handshake))
             {
                 LibLog::log_print(m_logger_name, "Unable to send data to the server");
                 std::this_thread::sleep_for(std::chrono::milliseconds(Proto::Constant::PacketRetransmitWaitTimestamp));
                 continue;
             }
 
-            if (!LibUDP::receive_data(m_endpoint, m_socket, answer))
+            if (!LibUDP::receive_data(m_session, answer))
             {
                 LibLog::log_print(m_logger_name, "Unable to receive answer from the server");
                 continue;
@@ -56,7 +56,7 @@ namespace Ozzy::v2
 
                 default:
                 {
-                    LibUDP::send_data(m_endpoint, m_socket, Proto::v1::DROP);
+                    LibUDP::send_data(m_session, Proto::v1::DROP);
                     return false;
                 }
             }
@@ -65,14 +65,14 @@ namespace Ozzy::v2
 
     bool UdpClient::validate_protocol_versions() noexcept
     {
-        if (!LibUDP::send_data(m_endpoint, m_socket, Proto::VERSION_2))
+        if (!LibUDP::send_data(m_session, Proto::VERSION_2))
         {
             LibLog::log_print(m_logger_name, "Unable to send protocol specification to the server");
             return false;
         }
 
         std::uint8_t answer;
-        if (!LibUDP::receive_data(m_endpoint, m_socket, answer))
+        if (!LibUDP::receive_data(m_session, answer))
         {
             LibLog::log_print(m_logger_name, "Failed receiving data from the server");
             return false;
@@ -82,7 +82,7 @@ namespace Ozzy::v2
         {
             server_answer_t server_protocol_version;
 
-            if (!LibUDP::receive_data(m_endpoint, m_socket, server_protocol_version))
+            if (!LibUDP::receive_data(m_session, server_protocol_version))
             {
                 LibLog::log_print(m_logger_name, "Client and server versions are incompatible!");
                 return false;
@@ -119,10 +119,10 @@ namespace Ozzy::v2
         // 2.1 Wait 3 seconds and send double set upper bound for the generated
         // double values in the payload.
         std::this_thread::sleep_for(std::chrono::seconds(3));
-        if (!LibUDP::send_data(m_endpoint, m_socket, m_upper_bound))
+        if (!LibUDP::send_data(m_session, m_upper_bound))
         {
             LibLog::log_print(m_logger_name, "Unable to send data to the server");
-            LibUDP::send_data(m_endpoint, m_socket, Proto::v1::DROP);
+            LibUDP::send_data(m_session, Proto::v1::DROP);
             return;
         }
 
@@ -133,16 +133,16 @@ namespace Ozzy::v2
         LibFS::ThreadCacheFile cache_file;
 
         if (cache_file.initialized_sucessfully())
-            LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::ACK);
+            LibUDP::send_data(m_session, Proto::v1::Answer::ACK);
         else
-            LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::DROP);
+            LibUDP::send_data(m_session, Proto::v1::Answer::DROP);
 
         for (;;)
         {
-            if (!LibUDP::receive_data(m_endpoint, m_socket, frame))
+            if (!LibUDP::receive_data(m_session, frame))
             {
                 LibLog::log_print(m_logger_name, "Unable to receive the frame from the server");
-                LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::NACK);
+                LibUDP::send_data(m_session, Proto::v1::Answer::NACK);
                 continue;
             }
 
@@ -152,7 +152,7 @@ namespace Ozzy::v2
             if (frame.checksum != checksum)
             {
                 LibLog::log_print(m_logger_name, "Frame checksum calculation failed. Recieved frame data is corrupted");
-                LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::NACK);
+                LibUDP::send_data(m_session, Proto::v1::Answer::NACK);
                 continue;
             }
 
@@ -163,9 +163,9 @@ namespace Ozzy::v2
             cache_file.write_frame(frame);
 
             // All good! We're now able to receive the next frame!
-            LibUDP::send_data(m_endpoint, m_socket, Proto::v1::Answer::ACK);
+            LibUDP::send_data(m_session, Proto::v1::Answer::ACK);
 
-            if (!LibUDP::receive_data(m_endpoint, m_socket, answer))
+            if (!LibUDP::receive_data(m_session, answer))
             {
                 LibLog::log_print(m_logger_name, "Failed receiving data from the the client!");
                 break;
