@@ -165,5 +165,8 @@ Like, image we have 2 chunks('^' means file pointer):
     ^      -> Wrote `1` to result file, iterate 2'nd chunk from index 1, second from index 1
 [1, 1, 2]
     ^
+
+On each iteration we load to memory only values that are on the current chunk file pointer position, and then
+comapre them to each other.
 ```
 
