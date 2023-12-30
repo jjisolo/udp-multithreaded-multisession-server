@@ -21,7 +21,7 @@ On Debian-based GNU/Linux distros:
 $ sudo apt-get install libboost-all-dev
 ```
 
-Next, `cd` into the `build` directory, and specify pre-defines compilers macros, as follows:
+Next, `cd` into the `build` directory, and specify pre-defined compilers macros, as follows:
 ```
 $ cmake -DCLIENTS_THREAD_POOL_CAPACITY=1000 -DOZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES=5000000 -DOZZY_USE_LARGE_CHUNK_MEMORY_ARENAS=1 ..
 ```
