@@ -4,7 +4,7 @@
 
 namespace Ozzy::v2
 {
-    bool UdpServer::send_frame(std::shared_ptr<LibUDP::Session>& session, Proto::Frame frame) noexcept
+    bool UdpServer::send_frame(std::shared_ptr<LibUDP::Session> &session, Proto::Frame frame) noexcept
     {
         client_answer_t answer;
 
@@ -45,7 +45,7 @@ namespace Ozzy::v2
         return false;
     }
 
-    bool UdpServer::send_frame_array(std::shared_ptr<LibUDP::Session>& session, double x) noexcept
+    bool UdpServer::send_frame_array(std::shared_ptr<LibUDP::Session> &session, double x) noexcept
     {
         const int unsigned frames_total = (m_doubles_count + Proto::OZZY_PAYLOAD_COUNT_PER_CHUNK - 1) /
                                           Proto::OZZY_PAYLOAD_COUNT_PER_CHUNK;
@@ -99,14 +99,17 @@ namespace Ozzy::v2
         m_process_next_request.store(false);
 
         // Create the socket, that will handle the response routine for this message
-        boost::asio::io_context          io_context;
+        boost::asio::io_context io_context;
         std::shared_ptr<LibUDP::Session> session = std::make_shared<LibUDP::Session>(io_context, client_endpoint);
 
-        // Validate that we received enough data
-        if (bytes_received != sizeof(Proto::Handshake))
+        // Validate that we received at least enough data to validate the
+        // request
+        if (bytes_received < sizeof(Proto::Handshake))
         {
             LibLog::log_print(m_logger_name, "Recieve failed, requested re-transmit");
             LibUDP::send_data(session, Proto::v1::NACK);
+            m_process_next_request.store(true);
+            return;
         }
 
         // Find out client endianes
@@ -115,24 +118,18 @@ namespace Ozzy::v2
 
         if (message == Proto::MESSAGE_TYPE_HANDSHAKE)
         {
-            if (bytes_received != sizeof(Proto::Handshake))
-            {
-                LibLog::log_print(m_logger_name,
-                                  "Error recieve data does not match expected struct(Ozzy::Proto::Handshake)");
-                LibUDP::send_data(session, Proto::v1::NACK);
-            }
-
             // Create the separate thread for the client
             if (m_client_connections.size() < CLIENTS_THREAD_POOL_CAPACITY)
             {
                 m_client_connections.push_back(session);
-                m_client_threads.emplace_back (&UdpServer::handle_handshake, this, std::move(session));
+                m_client_threads.emplace_back(&UdpServer::handle_handshake, this, std::move(session));
             }
             else
             {
                 LibLog::log_print(m_logger_name, "Too many threads for the client requests, handshake dropped");
                 LibUDP::send_data(session, Proto::v2::CLIENT_THREAD_POOL_EXHAUSED);
                 session->close();
+                m_process_next_request.store(true);
             }
         }
         else
@@ -142,6 +139,7 @@ namespace Ozzy::v2
                               " did not start the transmit operation with the hadnshake. Connection discarded.");
             LibUDP::send_data(session, Proto::v1::DROP);
             session->close();
+            m_process_next_request.store(true);
         }
     }
 
@@ -193,7 +191,8 @@ namespace Ozzy::v2
             return;
         }
 
-        LibLog::log_print(m_logger_name, "Succesfully handshaked with " + LibLog::serialize_endpoint(session->endpoint));
+        LibLog::log_print(m_logger_name,
+                          "Succesfully handshaked with " + LibLog::serialize_endpoint(session->endpoint));
 
         // 3. Start sending the packets to the client. According to the MTU of ~1500.
         // Meaninng that each packet should be less than 1500 bytes.

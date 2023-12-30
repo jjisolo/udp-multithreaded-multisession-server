@@ -43,7 +43,7 @@ namespace Ozzy::LibUDP
 
         bytes_received = session->socket.receive_from(
                 boost::asio::buffer(std::addressof(result), sizeof(T)),
-                session->endpoint, 0, error_code
+                session->endpoint
         );
         swap_endianess(result, session->to_big_endian);
 

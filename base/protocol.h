@@ -72,7 +72,7 @@ namespace Ozzy::Proto
 #pragma pack(push, 1)
     struct Handshake
     {
-        // Value to check server's endiannes
+        // Value to check clients's endiannes
         const std::uint8_t endian = 1;
         // 8 readonly bits for the type of this message
         const std::uint8_t type   = MESSAGE_TYPE_HANDSHAKE;
@@ -91,7 +91,7 @@ namespace Ozzy::Proto
             BRK ,
             ERR_VERSIONS_INCOMPATIBLE,
 
-            LAST_OPCODE = 50
+            LAST_OPCODE = 10
         };
     }
 
@@ -101,7 +101,7 @@ namespace Ozzy::Proto
         {
             CLIENT_THREAD_POOL_EXHAUSED = v1::LAST_OPCODE,
 
-            LAST_OPCODE = 100,
+            LAST_OPCODE = 19,
         };
     }
 

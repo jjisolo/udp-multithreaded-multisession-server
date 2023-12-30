@@ -66,6 +66,22 @@ else()
      add_definitions(-DTARGET_DEVICE_LITTLE_ENDIAN=1)
 endif()
 
+if (DEFINED CLIENTS_THREAD_POOL_CAPACITY)
+    add_definitions(-DCLIENTS_THREAD_POOL_CAPACITY=${CLIENTS_THREAD_POOL_CAPACITY})
+    message(STATUS "Using thread pool size of " ${CLIENTS_THREAD_POOL_CAPACITY})
+endif()
+
+if (DEFINED OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES)
+    add_definitions(-DOZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES=${OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES})
+    message(STATUS "Using chunk memory arena size of " ${OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES})
+endif()
+
+if (DEFINED OZZY_USE_LARGE_CHUNK_MEMORY_ARENAS)
+    add_definitions(-DOZZY_USE_LARGE_CHUNK_MEMORY_ARENAS=1)
+    message(STATUS "Using large memory arenas(can take a lot of memory!)")
+endif()
+
+
 # Link libraries
 target_link_libraries (ozzy_server ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)
 target_link_libraries (ozzy_client ${Boost_LIBRARIES} ozzy_base ozzy_filesystem ozzy_logging ozzy_udp)

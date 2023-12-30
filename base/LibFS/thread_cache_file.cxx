@@ -37,6 +37,7 @@
 #else
 #   define OZZY_LESS_CHUNK_RESERVE_VALUE OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES
 #endif
+
 #define OZZY_LARGE_MEMORY_ARENA_SIZE 500000000
 
 static constexpr const char* LOGGING_NAME     = "[Ozzy::ThreadCacheFileWriter] ";
@@ -158,7 +159,7 @@ namespace Ozzy::LibFS
             //
             //  -- Iteration 1 --
             //   [0, 1, 2]
-            //       ^       -> Wrote `1` to result file, iterate 1'st chunk from index 1, second from index 0
+            //       ^       -> Wrote `0` to result file, iterate 1'st chunk from index 1, second from index 0
             //   [1, 1, 2]
             //    ^
             //

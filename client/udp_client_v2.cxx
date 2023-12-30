@@ -61,6 +61,8 @@ namespace Ozzy::v2
                 }
             }
         }
+
+        return false;
     }
 
     bool UdpClient::validate_protocol_versions() noexcept
@@ -155,9 +157,6 @@ namespace Ozzy::v2
                 LibUDP::send_data(m_session, Proto::v1::Answer::NACK);
                 continue;
             }
-
-            for(unsigned ii = 0; ii < frame.length; ++ii)
-                LibLog::log_print(m_logger_name, "Received payload: " + std::to_string(frame.payload[ii]));
 
             // Write to temporary cache file
             cache_file.write_frame(frame);
