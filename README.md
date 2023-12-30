@@ -1,3 +1,11 @@
+# Hardware
+Tested on my main machine which is running `Fedora 39(x86_64)` with `g++-13.2.1` and `boost-devel-1.84.0`, and on my other
+machine with `Ubuntu 20.04 LTS(x86_64)` with `g++-10.5.0` and `libboost-devel-1.71.0`
+
+The minimal compiler(GCC) version is 10.0. Speaking about another compilers, well, every one that has c++20 standard support, especially
+`concept` thing.
+The minimal version of `Boost` is `1.71.0` or less.
+
 ### Setting up
 To run this application you need:
  * CMake
@@ -22,10 +30,11 @@ Or! just type this to use default values
 $ cmake ..
 ```
 
-The `CLIENTS_THREAD_POOL_CAPACITY` - the maximum simultanious connections that server can hold
+The `CLIENTS_THREAD_POOL_CAPACITY` - the maximum simultanious connections that server can hold. Setting this value to `<1` makes program
+behaviour undefined.
 
 The `OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES` - the size of the memory arena that is reserved for processing one chunk of data, the more value is
-the faster the chunk will be processed
+the faster the chunk will be processed.
 
 The `OZZY_USE_LARGE_CHUNK_MEMORY_ARENAS` - by default, the server has a memory cap that can be reserved for one chunk, because we don't want to
 reserve 1gig of memory to process 1meg chunk. This was added because we don't know what the chunk size will be. If we are really sure that we have as
@@ -130,4 +139,30 @@ After the file writing is finished, the application(client connection thread to 
 loads the contents of the thread cache file into this memory segment, sorts it and writes to the same-generated cache files, but with postfix of `_thread_chunk.bin`
 After all chunks has been sorted, the application merges them into the final result file, that has the header `THREAD_CACHE_MAGIC(0x595A5A4F -- OZZY)` guarding them by 
 `THREAD_CACHE_START_H(0xDEADBEEF)` at start and `THREAD_CACHE_END_H(0xC0FFEE)` at the end. 
+
+From the code commentary:
+```
+Works only on sorted chuns!
+Find minimal value among all chunk files(readers) at the same file pointer position
+and write it to the result output file(thread-safely)
+
+Like, image we have 2 chunks('^' means file pointer):
+
+-- Iteration 0 --
+[0, 1, 2]
+    ^
+[1, 1, 2]
+    ^
+
+-- Iteration 1 --
+[0, 1, 2]
+       ^       -> Wrote `0` to result file, iterate 1'st chunk from index 1, second from index 0
+[1, 1, 2]
+    ^
+
+-- Iteration 3 --
+[0, 1, 2]
+       ^       -> Wrote `1` to result file, iterate 2'nd chunk from index 1, second from index 1
+[1, 1, 2]
+```
 
