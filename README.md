@@ -140,7 +140,7 @@ loads the contents of the thread cache file into this memory segment, sorts it a
 After all chunks has been sorted, the application merges them into the final result file, that has the header `THREAD_CACHE_MAGIC(0x595A5A4F -- OZZY)` guarding them by 
 `THREAD_CACHE_START_H(0xDEADBEEF)` at start and `THREAD_CACHE_END_H(0xC0FFEE)` at the end. 
 
-From the code commentary:
+From the code commentary(describes how we merge chunks into one file):
 ```
 Works only on sorted chuns!
 Find minimal value among all chunk files(readers) at the same file pointer position
@@ -150,19 +150,20 @@ Like, image we have 2 chunks('^' means file pointer):
 
 -- Iteration 0 --
 [0, 1, 2]
-    ^
+ ^
 [1, 1, 2]
-    ^
+ ^
 
 -- Iteration 1 --
 [0, 1, 2]
-       ^       -> Wrote `0` to result file, iterate 1'st chunk from index 1, second from index 0
+    ^       -> Wrote `0` to result file, iterate 1'st chunk from index 1, second from index 0
 [1, 1, 2]
-    ^
+ ^
 
 -- Iteration 3 --
 [0, 1, 2]
-       ^       -> Wrote `1` to result file, iterate 2'nd chunk from index 1, second from index 1
+    ^      -> Wrote `1` to result file, iterate 2'nd chunk from index 1, second from index 1
 [1, 1, 2]
+    ^
 ```
 
