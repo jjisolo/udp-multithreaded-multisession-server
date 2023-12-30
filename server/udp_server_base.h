@@ -15,6 +15,10 @@
 // How much clients can server process simultaniously
 #ifndef CLIENTS_THREAD_POOL_CAPACITY
 #   define CLIENTS_THREAD_POOL_CAPACITY 1000
+#else
+#   if CLIENTS_THREAD_POOL_CAPACITY < 0
+#       error "Invalid value set for CLIENTS_THREAD_POOL_CAPACITY"
+#   endif
 #endif
 
 namespace Ozzy::Base
@@ -24,10 +28,8 @@ namespace Ozzy::Base
     class UdpServerBase : public Component::Configurable, public Component::Informative
     {
     protected:
-        UdpServerBase(boost::asio::io_context &io_context, const std::string &config_path,
-                      const std::string &logger_name, const std::uint64_t doubles_count)
-            : Informative(logger_name), m_general_socket(io_context), m_io_context(io_context),
-              m_doubles_count(doubles_count)
+        UdpServerBase(boost::asio::io_context &io_context, const std::string &config_path, const std::string &logger_name, const std::uint64_t doubles_count)
+            : Informative(logger_name), m_general_socket(io_context), m_io_context(io_context), m_doubles_count(doubles_count)
         {
             // Initialize RNG
             std::random_device m_random_device;
@@ -81,9 +83,6 @@ namespace Ozzy::Base
         // Start the server thread
         void start();
 
-        // Stop the server thread
-        void stop();
-
     private:
         // Receive the message from the client
         void start_receiving();
@@ -103,12 +102,12 @@ namespace Ozzy::Base
 
     private:
         std::atomic<bool> m_should_quit;
-        std::thread m_server_thread;
-        udp::socket m_general_socket;
-        std::thread m_thread_cleaner;
+        std::thread       m_server_thread;
+        udp::socket       m_general_socket;
+        std::thread       m_thread_cleaner;
 
     protected:
-        mutable std::uint64_t               m_doubles_count;
+        mutable             std::uint64_t   m_doubles_count;
         static thread_local std::mt19937_64 m_random_engine;
 
         std::vector<std::shared_ptr<LibUDP::Session>> m_client_connections;

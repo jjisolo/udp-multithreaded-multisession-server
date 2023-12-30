@@ -17,8 +17,7 @@ namespace Ozzy::Base
     class UdpClientBase : public Component::Configurable, public Component::Informative
     {
     public:
-        UdpClientBase(boost::asio::io_context &io_context, const std::string &config_path,
-                      const std::string logger_name, const double x)
+        UdpClientBase(boost::asio::io_context &io_context, const std::string &config_path, const std::string logger_name, const double x)
             : Informative(logger_name), m_io_context(io_context), m_upper_bound(x)
         {
             if (!config_load(config_path))
@@ -63,7 +62,7 @@ namespace Ozzy::Base
     public:
         virtual void process_handshake() = 0;
 
-        virtual bool send_handshake() = 0;
+        virtual bool send_handshake()    = 0;
 
     protected:
         std::shared_ptr<LibUDP::Session> m_session;

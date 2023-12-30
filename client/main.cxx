@@ -20,8 +20,17 @@ int main(int argc, char** argv)
     );
 
     boost::program_options::variables_map variables_map;
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), variables_map);
-    boost::program_options::notify(variables_map);
+    try
+    {
+        boost::program_options::store (boost::program_options::parse_command_line(argc, argv, description), variables_map);
+        boost::program_options::notify(variables_map);
+    }
+    catch(const boost::program_options::error& e)
+    {
+        std::cerr << "Error parsing command-line arguments: " << e.what() << std::endl;
+        exit(-1);
+    }
+
 
     if (variables_map.contains("help"))
     {

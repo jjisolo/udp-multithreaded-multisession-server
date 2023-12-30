@@ -8,8 +8,13 @@ namespace Ozzy::Base
 
     UdpServerBase::~UdpServerBase()
     {
+        m_server_thread .join();
         m_general_socket.close();
-        stop();
+
+        // We really want all threads to be joined
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        m_thread_cleaner.join();
+        m_io_context    .stop();
     }
 
     void UdpServerBase::start_receiving()
@@ -60,6 +65,8 @@ namespace Ozzy::Base
 
                         m_client_threads    .erase(m_client_threads.begin()     + i);
                         m_client_connections.erase(m_client_connections.begin() + 1);
+                        --i;
+
                         ++joined_total;
                     }
                 }
@@ -72,11 +79,7 @@ namespace Ozzy::Base
                 std::this_thread::sleep_for(std::chrono::seconds(2));
             }
         });
-    }
 
-    void UdpServerBase::stop()
-    {
-        m_server_thread.join();
-        m_thread_cleaner.join();
+        LibLog::log_print(m_logger_name, "Server started");
     }
 }

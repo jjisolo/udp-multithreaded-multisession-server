@@ -1,13 +1,13 @@
 #include <iostream>
-#include <thread>
-
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-
 #include "udp_server_v2.h"
 
 auto main(int argc, char** argv) -> int
 {
+    //
+    // Setup program options
+    //
     boost::program_options::options_description description("Ozzy UDP server options");
     description.add_options()
     (
@@ -20,8 +20,16 @@ auto main(int argc, char** argv) -> int
     );
 
     boost::program_options::variables_map variables_map;
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, description), variables_map);
-    boost::program_options::notify(variables_map);
+    try
+    {
+        boost::program_options::store (boost::program_options::parse_command_line(argc, argv, description), variables_map);
+        boost::program_options::notify(variables_map);
+    }
+    catch(const boost::program_options::error& e)
+    {
+        std::cerr << "Error parsing command-line arguments: " << e.what() << std::endl;
+        exit(-1);
+    }
 
     if (variables_map.contains("help"))
     {
@@ -36,18 +44,19 @@ auto main(int argc, char** argv) -> int
         std::cerr << "Set count of sended doubles to the " << doubles_count << std::endl;
     }
 
+    //
+    // Initialize main routine
+    //
     try
     {
         boost::asio::io_context context;
-        Ozzy::v2::UdpServer server(context, "config/server_cfg.cfg", "UdpServer", doubles_count);
+        Ozzy::v2::UdpServer     server(context, "config/server_cfg.cfg", "UdpServer", doubles_count);
         server.start();
 
         while (true)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-
-        server.stop();
     }
     catch (std::exception &e)
     {

@@ -10,11 +10,10 @@ namespace Ozzy::v2
 
     class UdpClient : public Base::UdpClientBase
     {
-        using server_answer_t = std::uint_fast8_t;
+        using server_answer_t = std::uint8_t;
 
     public:
-        UdpClient(boost::asio::io_context &io_context, const std::string &config_path, const std::string logger_name,
-                  const double x)
+        UdpClient(boost::asio::io_context &io_context, const std::string &config_path, const std::string logger_name, const double x)
             : UdpClientBase(io_context, config_path, logger_name, x)
         {
         }

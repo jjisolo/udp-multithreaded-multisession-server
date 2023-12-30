@@ -20,6 +20,10 @@
 // after ~40 seconds)
 #ifndef OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES
 #   define OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES 1000000
+#else
+#   if OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES < 0
+#       error "Invalid value for the OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES"
+#   endif
 #endif
 
 // The idea is that we don't reserve huge memory arenas if we
