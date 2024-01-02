@@ -83,6 +83,10 @@ namespace Ozzy::Base
         // Start the server thread
         void start();
 
+        UdpServerBase(const UdpServerBase&)            = delete;
+
+        UdpServerBase& operator=(const UdpServerBase&) = delete;
+
     private:
         // Receive the message from the client
         void start_receiving();

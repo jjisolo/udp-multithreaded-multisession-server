@@ -52,7 +52,8 @@ Open two terminal instances, in the first one launch the server and specify the 
 $ ./ozzy_server --doubles 1000000
 ```
 In the other one, execute the client(inside there's actually 4 clients running in separate threads) an specify the X value that is gonna be used as the upper and lower bound
-for the generated set of doubles in the payload
+for the generated set of doubles in the payload. The default value for `--doubles` if not explicitly specified is: **1000000(one million)**
+
 ```
 $ ./ozzy_client --x 20
 ```
@@ -60,7 +61,7 @@ After the program is finished, you might want to look at the resulting file, so 
 ```
 $ python3 hextodouble.py 
 ```
-It will read the `result.bin` file and show you it's contents in a human-readable format
+The default value for `--x` if not explicitly specified is: **1.0**. It will read the `result.bin` file and show you it's contents in a human-readable format
 
 *WARNING: This script works only on little endian machines!*
 

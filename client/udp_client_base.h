@@ -2,9 +2,7 @@
 #define __OZZY_UDP_CLIENT_BASE__
 
 #include <string>
-#include <mutex>
 #include <boost/asio.hpp>
-#include "protocol.h"
 #include "LibLog/logging.h"
 #include "LibUDP/networking.h"
 #include "LibTT/configurable.h"
@@ -58,6 +56,10 @@ namespace Ozzy::Base
         }
 
         virtual ~UdpClientBase();
+
+        UdpClientBase(const UdpClientBase&)            = delete;
+
+        UdpClientBase& operator=(const UdpClientBase&) = delete;
 
     public:
         virtual void process_handshake() = 0;
