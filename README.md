@@ -146,7 +146,7 @@ So, the algorithm looks like this:
  * Load the chunk of this file to the memory one by one(chunk size is `OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES`);
  * Sort it;
  * Write to the `*_thread_chunk.bin` file;
- * After all chunks has been sorted and written, create `OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES / thread cache file size` chunk readers;
+ * After all chunks has been sorted and written, create `thread cache file size / OZZY_CHUNK_MEMORY_ARENA_SIZE_BYTES` chunk readers;
  * Find the least value between all this readers at the position of theirs file pointer;
  * Move the file pointer of the reader with minimal value `sizeof(double)` size;
  * Write it to the result bin file
