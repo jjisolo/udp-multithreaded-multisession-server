@@ -96,7 +96,7 @@ we will not drop the payload offset, and just borrow bits from the checksum bitf
 |                      |                           |  of the payload.          |
 +----------------------+---------------------------+---------------------------+
 
-               Frame payload(1400 octets in this implementation)
+               Frame payload(1400 octets *maximum* in this implementation)
 +----------------------+---------------------------+---------------------------+
 |     payload          |      8-1407               |  Payload with doubles.    |
 |                      |                           |                           |
