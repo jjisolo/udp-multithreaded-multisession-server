@@ -7,7 +7,7 @@ namespace Ozzy::v2
 {
     using boost::asio::ip::udp;
 
-    bool UdpClient::send_handshake()
+    bool UdpClient::send_handshake() noexcept
     {
         Proto::Handshake handshake;
         server_answer_t  answer;
@@ -98,7 +98,7 @@ namespace Ozzy::v2
         return true;
     }
 
-    void UdpClient::process_handshake()
+    void UdpClient::process_handshake() noexcept
     {
         // 1. Send handshake to the server, with the upper_bound payload,
         // which describes the maxium/minumum bound of the generated set with doubles.

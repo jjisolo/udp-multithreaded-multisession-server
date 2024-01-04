@@ -99,8 +99,20 @@ namespace Ozzy::v2
         m_process_next_request.store(false);
 
         // Create the socket, that will handle the response routine for this message
-        boost::asio::io_context io_context;
-        std::shared_ptr<LibUDP::Session> session = std::make_shared<LibUDP::Session>(io_context, client_endpoint);
+        boost::asio::io_context          io_context;
+        std::shared_ptr<LibUDP::Session> session;
+	
+	    try
+      	    {
+	        session = std::make_shared<LibUDP::Session>(io_context, client_endpoint);
+	    }
+	    catch(const std::exception& ex)
+	    {
+	        LibLog::log_print(m_logger_name, "Exception when creating session context: " + std::string(ex.what()));
+
+            	m_process_next_request.store(true);
+	        return;
+	    }
 
         // Validate that we received at least enough data to validate the
         // request

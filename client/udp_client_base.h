@@ -34,7 +34,7 @@ namespace Ozzy::Base
             {
                 auto resolver  = udp::resolver(io_context);
                 auto endpoints = resolver.resolve(udp::v4(), m_config["server_ip_address"], m_config["server_port"]);
-
+		
                 m_session = std::make_shared<LibUDP::Session>(io_context);
                 // Perform none endian conversions, because server has already handled
                 // it for us
@@ -62,9 +62,9 @@ namespace Ozzy::Base
         UdpClientBase& operator=(const UdpClientBase&) = delete;
 
     public:
-        virtual void process_handshake() = 0;
+        virtual void process_handshake() noexcept = 0;
 
-        virtual bool send_handshake()    = 0;
+        virtual bool send_handshake()    noexcept = 0;
 
     protected:
         std::shared_ptr<LibUDP::Session> m_session;

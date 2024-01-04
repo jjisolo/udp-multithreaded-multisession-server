@@ -22,9 +22,9 @@ namespace Ozzy::v2
         bool validate_protocol_versions() noexcept;
 
     public:
-        void process_handshake() override;
+        void process_handshake() noexcept override;
 
-        bool send_handshake() override;
+        bool send_handshake()    noexcept override;
     };
 }
 
